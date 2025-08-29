@@ -1,27 +1,102 @@
 /* eslint-disable react/jsx-key */
 import React from 'react'
 
-const Container = ({{children}}) => <main className="container">{{"{{children}}"}}</main>
+const Canvas = ({ children, width, height }) => (
+  <div className="canvas" style={{ width: `${width}px`, height: `${height}px` }}>
+    {children}
+  </div>
+)
 
 export default function App() {
   return (
-    <Container>
+    <Canvas width={{ meta.w }} height={{ meta.h }}>
       {%- for el in elements %}
+        {%- if el.bbox and el.bbox|length == 4 %}
+          {%- set x1, y1, x2, y2 = el.bbox %}
+          {%- set width = x2 - x1 %}
+          {%- set height = y2 - y1 %}
+        {%- else %}
+          {%- set x1, y1, x2, y2 = 0, 0, 100, 30 %}
+          {%- set width = 100 %}
+          {%- set height = 30 %}
+        {%- endif %}
+        
         {%- if el.type == 'text' -%}
           {%- if el.style.role == 'h1' -%}
-            <h1 className="text">{{ el.text | e }}</h1>
+            <h1 
+              className="element text-element" 
+              id="{{ el.id }}"
+              style={{
+                left: '{{ x1 }}px',
+                top: '{{ y1 }}px', 
+                width: '{{ width }}px',
+                height: '{{ height }}px'
+              }}
+            >
+              {{ el.text | e }}
+            </h1>
           {%- else -%}
-            <p className="text">{{ el.text | e }}</p>
+            <p 
+              className="element text-element" 
+              id="{{ el.id }}"
+              style={{
+                left: '{{ x1 }}px',
+                top: '{{ y1 }}px',
+                width: '{{ width }}px', 
+                height: '{{ height }}px'
+              }}
+            >
+              {{ el.text | e }}
+            </p>
           {%- endif -%}
+          
         {%- elif el.type == 'input' -%}
-          <label className="label">{{ (el.label or '') | e }}</label>
-          <input className="input" type="{{ 'password' if el.secure else 'text' }}" placeholder="{{ (el.placeholder or '') | e }}" />
+          <input 
+            className="element input-element" 
+            id="{{ el.id }}"
+            type="{{ 'password' if el.secure else 'text' }}" 
+            placeholder="{{ (el.placeholder or '') | e }}"
+            style={{
+              left: '{{ x1 }}px',
+              top: '{{ y1 }}px',
+              width: '{{ width }}px',
+              height: '{{ height }}px'
+            }}
+          />
+          
         {%- elif el.type == 'button' -%}
-          <button className={"btn " + ("primary" if el.style.variant == 'primary' else "secondary")}>{{ (el.text or 'Button') | e }}</button>
+          <button 
+            className={`element button-element ${"primary" if el.style.variant == 'primary' else "secondary"}`}
+            id="{{ el.id }}"
+            style={{
+              left: '{{ x1 }}px',
+              top: '{{ y1 }}px',
+              width: '{{ width }}px',
+              height: '{{ height }}px'
+            }}
+          >
+            {{ (el.text or 'Button') | e }}
+          </button>
+          
         {%- elif el.type == 'image' -%}
-          <img className="image" src="{{ (el.src or '') | e }}" alt="{{ ('image_' + el.id) | e }}" />
+          <div 
+            className="element image-element" 
+            id="{{ el.id }}"
+            style={{
+              left: '{{ x1 }}px',
+              top: '{{ y1 }}px',
+              width: '{{ width }}px',
+              height: '{{ height }}px'
+            }}
+          >
+            {%- if el.src -%}
+              <img src="{{ el.src | e }}" alt="{{ ('image_' + el.id) | e }}" />
+            {%- else -%}
+              <div className="image-placeholder">{{ ('image_' + el.id) | e }}</div>
+            {%- endif -%}
+          </div>
         {%- endif -%}
       {%- endfor %}
-    </Container>
+    </Canvas>
   )
 }

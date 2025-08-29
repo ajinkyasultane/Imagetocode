@@ -44,11 +44,41 @@ Open: http://localhost:8501
 ## CLI Usage
 
 ```bash
+# Detect UI elements
 python scripts/cli.py detect --in samples/inputs/login.png --out samples/ir/login.json --verbose
+
+# Generate code and create ZIP
 python scripts/cli.py gen --ir samples/ir/login.json --target web --out outputs/login_web.zip
+
+# Generate code and open directly in IDE
+python scripts/cli.py gen --ir samples/ir/login.json --target react --out outputs/login_react.zip --open-ide
+
+# Generate code and open in specific IDE
+python scripts/cli.py gen --ir samples/ir/login.json --target flutter --out outputs/login_flutter.zip --open-ide --ide vscode
+
+# List available IDEs
+python scripts/cli.py list-ides
 ```
 
 Targets: `web | react | flutter`.
+
+### IDE Integration
+
+The tool now supports direct IDE integration! After generating code, you can:
+
+**Supported IDEs:**
+- **VS Code** (`vscode`) - supports web, react, flutter
+- **WebStorm** (`webstorm`) - supports web, react  
+- **Android Studio** (`android_studio`) - supports flutter
+- **IntelliJ IDEA** (`intellij`) - supports web, react, flutter
+- **Sublime Text** (`sublime`) - supports all frameworks
+- **Atom** (`atom`) - supports all frameworks
+
+**CLI Options:**
+- `--open-ide` - Auto-detect and open in compatible IDE
+- `--ide <ide_key>` - Open in specific IDE (vscode, webstorm, etc.)
+- `--no-zip` - Skip ZIP creation, only generate project directory
+- `list-ides` - Show available IDEs and their capabilities
 
 ## Troubleshooting
 

@@ -8,6 +8,8 @@ from PIL import Image
 
 from utils.io_helpers import save_uploaded_image_strip_exif, safe_filename, load_ir, save_ir, ir_to_rows, rows_to_ir, autosuffix_if_exists, make_zip_from_dir
 from utils.viz import draw_boxes
+from utils.ide_integration import IDEIntegration
+from utils.safe_file_ops import safe_rmtree, cleanup_temp_files
 from core.detect import detect
 from jsonschema import validate
 
@@ -151,19 +153,50 @@ def run():
                     st.write("- ", e)
             st.stop()
 
+        # IDE Integration Setup
+        ide_integration = IDEIntegration()
+        available_ides = ide_integration.detect_available_ides()
+        
+        # IDE Selection
+        st.subheader("🚀 IDE Integration")
+        if available_ides:
+            ide_options = ["None (Download ZIP only)"] + [f"{ide['name']}" for ide in available_ides]
+            selected_ide_name = st.selectbox("Open generated code in IDE:", ide_options)
+            selected_ide = None
+            if selected_ide_name != "None (Download ZIP only)":
+                selected_ide = next((ide for ide in available_ides if ide['name'] == selected_ide_name), None)
+        else:
+            st.info("No supported IDEs detected. Code will be generated as ZIP files.")
+            selected_ide = None
+
         target_cols = st.columns(3)
         zips = {}
         for i, target in enumerate(["web", "react", "flutter"]):
             with target_cols[i]:
-                if st.button(f"Generate {target.title()} ZIP"):
+                # Check if selected IDE supports this framework
+                ide_supports_framework = True
+                if selected_ide:
+                    ide_supports_framework = target in selected_ide["supports"]
+                    if not ide_supports_framework:
+                        st.warning(f"{selected_ide['name']} doesn't support {target}")
+
+                if st.button(f"Generate {target.title()}", key=f"gen_{target}"):
                     out_dir = OUTPUTS_DIR / f"{ir['meta']['title'].replace(' ','_').lower()}_{target}"
                     if out_dir.exists():
-                        shutil.rmtree(out_dir)
+                        cleanup_temp_files(out_dir)
+                        if not safe_rmtree(out_dir):
+                            st.error(f"Could not remove existing directory {out_dir}. Please close any open files and try again.")
+                            continue
                     gen_fn = gen_registry.get(target)
                     if gen_fn is None:
                         st.error(f"Generator '{target}' not found")
                     else:
                         gen_fn(ir, out_dir)
+                        
+                        # Store the output directory for IDE opening
+                        st.session_state[f"out_dir_{target}"] = out_dir
+                        
+                        # Create ZIP
                         zip_path = OUTPUTS_DIR / f"{out_dir.name}.zip"
                         if zip_path.exists(): zip_path.unlink()
                         from utils.io_helpers import make_zip_from_dir
@@ -172,12 +205,52 @@ def run():
                             zips[target] = f.read()
                         st.success(f"Generated → {zip_path}")
                         st.session_state[f"zip_{target}"] = zips[target]
+                        
+                        # Open in IDE if selected and supported
+                        if selected_ide and ide_supports_framework:
+                            success, message = ide_integration.open_in_ide(out_dir, selected_ide["key"], target)
+                            if success:
+                                st.success(f"✅ {message}")
+                                instructions = ide_integration.get_framework_specific_instructions(target, selected_ide["key"])
+                                st.info(f"💡 **Next steps:** {instructions}")
+                            else:
+                                st.error(f"❌ {message}")
+                                st.info("💾 You can still download the ZIP file below.")
 
-        # Download buttons if available
+        # Download buttons and IDE actions
+        st.subheader("📥 Download & IDE Actions")
         for target in ["web","react","flutter"]:
             data = st.session_state.get(f"zip_{target}")
+            out_dir = st.session_state.get(f"out_dir_{target}")
+            
             if data:
-                st.download_button(f"Download {target.title()} ZIP", data=data, file_name=f"{ir['meta']['title'].replace(' ','_').lower()}_{target}.zip")
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.download_button(
+                        f"📦 Download {target.title()} ZIP", 
+                        data=data, 
+                        file_name=f"{ir['meta']['title'].replace(' ','_').lower()}_{target}.zip",
+                        key=f"download_{target}"
+                    )
+                with col2:
+                    if out_dir and out_dir.exists():
+                        # Show compatible IDEs for this framework
+                        compatible_ides = ide_integration.get_compatible_ides(target)
+                        if compatible_ides:
+                            ide_key = st.selectbox(
+                                f"Open {target} in:",
+                                options=[ide["key"] for ide in compatible_ides],
+                                format_func=lambda x: next(ide["name"] for ide in compatible_ides if ide["key"] == x),
+                                key=f"ide_select_{target}"
+                            )
+                            if st.button(f"🚀 Open in IDE", key=f"open_{target}"):
+                                success, message = ide_integration.open_in_ide(out_dir, ide_key, target)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    instructions = ide_integration.get_framework_specific_instructions(target, ide_key)
+                                    st.info(f"💡 **Next steps:** {instructions}")
+                                else:
+                                    st.error(f"❌ {message}")
 
     # Logs
     with tabs[4]:

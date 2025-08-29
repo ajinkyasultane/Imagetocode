@@ -6,6 +6,7 @@ from PIL import Image
 from core.detect import detect
 from codegen.registry import registry
 from utils.io_helpers import make_zip_from_dir
+from utils.ide_integration import IDEIntegration
 
 def cmd_detect(args):
     src = Path(args.input)
@@ -40,10 +41,69 @@ def cmd_gen(args):
     if tmp_out.exists():
         shutil.rmtree(tmp_out)
     gen(ir, tmp_out)
-    if out_zip.exists():
-        out_zip.unlink()
-    make_zip_from_dir(tmp_out, out_zip)
-    print(f"Generated {target} → {out_zip}")
+    
+    # Handle IDE opening
+    if args.open_ide:
+        ide_integration = IDEIntegration()
+        if args.ide:
+            # Specific IDE requested
+            available_ides = ide_integration.detect_available_ides()
+            selected_ide = next((ide for ide in available_ides if ide['key'] == args.ide), None)
+            if not selected_ide:
+                print(f"Warning: IDE '{args.ide}' not found or not supported")
+                print("Available IDEs:", [ide['key'] for ide in available_ides])
+            elif target not in selected_ide['supports']:
+                print(f"Warning: {selected_ide['name']} doesn't support {target} projects")
+            else:
+                success, message = ide_integration.open_in_ide(tmp_out, args.ide, target)
+                if success:
+                    print(f"✅ {message}")
+                    instructions = ide_integration.get_framework_specific_instructions(target, args.ide)
+                    print(f"💡 Next steps: {instructions}")
+                else:
+                    print(f"❌ {message}")
+        else:
+            # Auto-detect compatible IDE
+            compatible_ides = ide_integration.get_compatible_ides(target)
+            if compatible_ides:
+                selected_ide = compatible_ides[0]  # Use first compatible IDE
+                success, message = ide_integration.open_in_ide(tmp_out, selected_ide['key'], target)
+                if success:
+                    print(f"✅ {message}")
+                    instructions = ide_integration.get_framework_specific_instructions(target, selected_ide['key'])
+                    print(f"💡 Next steps: {instructions}")
+                else:
+                    print(f"❌ {message}")
+            else:
+                print(f"No compatible IDEs found for {target} projects")
+    
+    # Always create ZIP unless --no-zip is specified
+    if not args.no_zip:
+        if out_zip.exists():
+            out_zip.unlink()
+        make_zip_from_dir(tmp_out, out_zip)
+        print(f"Generated {target} → {out_zip}")
+    else:
+        print(f"Generated {target} → {tmp_out}")
+
+def cmd_list_ides(args):
+    """List available IDEs and their supported frameworks."""
+    ide_integration = IDEIntegration()
+    available_ides = ide_integration.detect_available_ides()
+    
+    if not available_ides:
+        print("No supported IDEs detected.")
+        print("\nSupported IDEs:")
+        for ide_key, ide_info in ide_integration.supported_ides.items():
+            print(f"  {ide_key}: {ide_info['name']} (supports: {', '.join(ide_info['supports'])})")
+        return
+    
+    print("Available IDEs:")
+    for ide in available_ides:
+        print(f"  {ide['key']}: {ide['name']} (supports: {', '.join(ide['supports'])})")
+        print(f"    Executable: {ide['executable']}")
+    
+    print(f"\nTotal: {len(available_ides)} IDE(s) detected")
 
 def main(argv=None):
     p = argparse.ArgumentParser(prog="im2multi", description="ImageToMulticode CLI")
@@ -60,7 +120,13 @@ def main(argv=None):
     p_gen.add_argument("--ir", required=True, help="Path to IR JSON")
     p_gen.add_argument("--target", required=True, help="web | react | flutter")
     p_gen.add_argument("--out", required=True, help="Output ZIP path")
+    p_gen.add_argument("--open-ide", action="store_true", help="Open generated code in compatible IDE")
+    p_gen.add_argument("--ide", help="Specific IDE to use (vscode, webstorm, android_studio, etc.)")
+    p_gen.add_argument("--no-zip", action="store_true", help="Don't create ZIP file, only generate project directory")
     p_gen.set_defaults(func=cmd_gen)
+
+    p_list = sub.add_parser("list-ides", help="List available IDEs and their supported frameworks")
+    p_list.set_defaults(func=cmd_list_ides)
 
     args = p.parse_args(argv)
     if not hasattr(args, "func"):

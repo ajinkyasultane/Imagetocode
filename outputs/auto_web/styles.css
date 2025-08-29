@@ -1,7 +1,7 @@
 :root {
-  --primary: {{ theme.primary_color }};
-  --radius: {{ theme.radius_px }}px;
-  --font: {{ theme.font_stack }};
+  --primary: #2563EB;
+  --radius: 12px;
+  --font: system-ui, Arial;
 }
 
 * { 
