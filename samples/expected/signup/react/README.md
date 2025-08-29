@@ -1,0 +1,10 @@
+# Generated React (Vite) App
+
+Install deps and run:
+
+```bash
+npm install
+npm run dev
+# or build:
+npm run build
+```

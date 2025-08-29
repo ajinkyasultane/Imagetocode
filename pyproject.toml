@@ -1,0 +1,17 @@
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-select = ["I"]  # import sorting
+exclude = ["outputs", "samples/expected"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[build-system]
+requires = ["setuptools", "wheel"]

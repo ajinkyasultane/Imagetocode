@@ -1,0 +1,81 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const GeneratedApp());
+}
+
+class GeneratedApp extends StatelessWidget {
+  const GeneratedApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "{{ meta.title }}",
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
+        useMaterial3: true,
+      ),
+      home: const GeneratedHome(),
+    );
+  }
+}
+
+class GeneratedHome extends StatelessWidget {
+  const GeneratedHome({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("{{ meta.title }}")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            {% for el in elements %}
+            {% if el.type == 'text' %}
+              {% if el.style.role == 'h1' %}
+              const SizedBox(height: 8),
+              Text("{{ el.text | e }}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
+              {% else %}
+              const SizedBox(height: 8),
+              Text("{{ el.text | e }}"),
+              {% endif %}
+            {% elif el.type == 'input' %}
+              const SizedBox(height: 12),
+              {% if el.label %} Text("{{ el.label | e }}"), {% endif %}
+              TextField(
+                obscureText: {{ 'true' if el.secure else 'false' }},
+                decoration: InputDecoration(
+                  hintText: "{{ (el.placeholder or '') | e }}",
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            {% elif el.type == 'button' %}
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {},
+                  child: Text("{{ (el.text or 'Button') | e }}"),
+                ),
+              ),
+            {% elif el.type == 'image' %}
+              const SizedBox(height: 12),
+              Container(
+                height: 140,
+                decoration: BoxDecoration(
+                  color: Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Color(0xFFE5E7EB)),
+                ),
+                alignment: Alignment.center,
+                child: const Text("image"),
+              ),
+            {% endif %}
+            {% endfor %}
+          ],
+        ),
+      ),
+    );
+  }
+}

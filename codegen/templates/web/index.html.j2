@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ meta.title | e }}</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      {% for el in elements %}
+        {% if el.type == 'text' %}
+          {% set tag = 'h1' if el.style.role == 'h1' else 'p' %}
+          <{{ tag }} class="text">{{ el.text | e }}</{{ tag }}>
+        {% elif el.type == 'input' %}
+          <label class="label">{{ (el.label or '') | e }}</label>
+          <input class="input" type="{{ 'password' if el.secure else 'text' }}" placeholder="{{ (el.placeholder or '') | e }}"/>
+        {% elif el.type == 'button' %}
+          <button class="btn {{ 'primary' if el.style.variant == 'primary' else 'secondary' }}">{{ (el.text or 'Button') | e }}</button>
+        {% elif el.type == 'image' %}
+          <img class="image" src="{{ (el.src or '') | e }}" alt="{{ ('image_' + el.id) | e }}" />
+        {% endif %}
+      {% endfor %}
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

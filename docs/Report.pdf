@@ -1,0 +1,29 @@
+%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
+4 0 obj << /Length 794 >> stream
+BT /F1 18 Tf 72 750 Td (ImageToMulticode Report) Tj ET
+BT /F1 12 Tf 72 720 Td (Date: 2025-08-28 ) Tj ET
+BT /F1 12 Tf 72 704 Td (Goal: Convert UI images to IR and generate Web/React/Flutter code. ) Tj ET
+BT /F1 12 Tf 72 688 Td (Pipeline: preprocess → detect → OCR \(optional\) → layout → IR → generators. ) Tj ET
+BT /F1 12 Tf 72 672 Td (Determinism: golden snapshots enforce byte-for-byte outputs. ) Tj ET
+BT /F1 12 Tf 72 656 Td (Quality: ruff, black, mypy, pytest, E2E pipeline tests. ) Tj ET
+BT /F1 12 Tf 72 640 Td (Packaging: Docker, optional PyInstaller for CLI. ) Tj ET
+BT /F1 12 Tf 72 624 Td (Limits: Heuristic-only detection; YOLO hooks left as future work. ) Tj ET
+BT /F1 12 Tf 72 608 Td (Future Work: Improve heuristics, add more widgets, support grids & constraints. ) Tj ET
+
+endstream endobj
+5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001086 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+1156
+%%EOF

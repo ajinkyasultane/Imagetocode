@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ImageToMulticode IR v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meta",
+    "elements"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "title",
+        "w",
+        "h",
+        "grid"
+      ],
+      "properties": {
+        "schema": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        },
+        "grid": {
+          "type": "string"
+        }
+      }
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "bbox"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "input",
+              "button",
+              "image"
+            ]
+          },
+          "bbox": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "number"
+            }
+          },
+          "text": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "src": {
+            "type": "string"
+          },
+          "style": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "enum": [
+                  "h1",
+                  "p"
+                ]
+              },
+              "variant": {
+                "enum": [
+                  "primary",
+                  "secondary"
+                ]
+              }
+            }
+          },
+          "secure": {
+            "type": "boolean"
+          },
+          "placeholder": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

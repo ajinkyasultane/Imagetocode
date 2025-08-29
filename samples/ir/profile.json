@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "schema": 1,
+    "title": "profile",
+    "w": 480.0,
+    "h": 800.0,
+    "grid": "12-col"
+  },
+  "elements": [
+    {
+      "id": "h1_title",
+      "type": "text",
+      "bbox": [
+        24,
+        24,
+        456,
+        80
+      ],
+      "text": "profile",
+      "style": {
+        "role": "h1"
+      }
+    },
+    {
+      "id": "lbl_email",
+      "type": "text",
+      "bbox": [
+        36,
+        160,
+        140,
+        184
+      ],
+      "text": "Email"
+    },
+    {
+      "id": "in_email",
+      "type": "input",
+      "bbox": [
+        24,
+        184,
+        456,
+        228
+      ],
+      "placeholder": "email"
+    },
+    {
+      "id": "lbl_pass",
+      "type": "text",
+      "bbox": [
+        36,
+        252,
+        160,
+        276
+      ],
+      "text": "Password"
+    },
+    {
+      "id": "in_pass",
+      "type": "input",
+      "bbox": [
+        24,
+        276,
+        456,
+        320
+      ],
+      "secure": true,
+      "placeholder": "password"
+    },
+    {
+      "id": "btn_continue",
+      "type": "button",
+      "bbox": [
+        24,
+        344,
+        456,
+        396
+      ],
+      "text": "Continue",
+      "style": {
+        "variant": "primary"
+      }
+    },
+    {
+      "id": "img_box",
+      "type": "image",
+      "bbox": [
+        140,
+        424,
+        340,
+        564
+      ],
+      "src": ""
+    },
+    {
+      "id": "txt_footer",
+      "type": "text",
+      "bbox": [
+        120,
+        760,
+        300,
+        780
+      ],
+      "text": "\u00a9 Piyush 2025",
+      "style": {
+        "role": "p"
+      }
+    }
+  ]
+}

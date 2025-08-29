@@ -1,0 +1,10 @@
+# Generated Web Bundle
+
+This bundle was generated from an IR produced by ImageToMulticode.
+
+## Files
+- `index.html`
+- `styles.css`
+- `app.js`
+
+Open `index.html` in your browser.

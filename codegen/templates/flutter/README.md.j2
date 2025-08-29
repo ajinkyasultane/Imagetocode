@@ -1,0 +1,10 @@
+# Generated Flutter App
+
+Open in a Flutter environment:
+
+```bash
+flutter pub get
+flutter run
+# or analyze (optional in generator):
+flutter analyze
+```
