@@ -33,6 +33,35 @@
         },
         "grid": {
           "type": "string"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"]
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "layout": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["single", "linear", "form", "grid"]
+            },
+            "alignment": {
+              "type": "string",
+              "enum": ["none", "left", "center", "right", "mixed"]
+            },
+            "grid": {
+              "type": ["object", "null"],
+              "additionalProperties": true
+            }
+          }
         }
       }
     },
@@ -55,7 +84,9 @@
               "text",
               "input",
               "button",
-              "image"
+              "image",
+              "unknown",
+              "container"
             ]
           },
           "bbox": {
@@ -98,6 +129,37 @@
           },
           "placeholder": {
             "type": "string"
+          },
+          "avg_color": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "dominant_color": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "has_border": {
+            "type": "boolean"
+          },
+          "fill_ratio": {
+            "type": "number"
+          },
+          "is_uniform": {
+            "type": "boolean"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
           }
         }
       }

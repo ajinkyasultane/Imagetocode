@@ -11,6 +11,7 @@ from utils.viz import draw_boxes
 from utils.ide_integration import IDEIntegration
 from utils.safe_file_ops import safe_rmtree, cleanup_temp_files
 from core.detect import detect
+from core.enhanced_detect import EnhancedDetector
 from jsonschema import validate
 
 from codegen.registry import registry as gen_registry
@@ -96,17 +97,39 @@ def run():
     with tabs[1]:
         st.subheader("Detect")
         src_path = None
-        if sample_choice in SAMPLES and sample_choice != "(none)":
+        
+        # Priority: uploaded images first, then samples
+        uploaded_files = list(UPLOAD_DIR.glob("*"))
+        if uploaded_files:
+            src_path = sorted(uploaded_files)[-1]  # Most recent upload
+            st.info(f"Using uploaded image: {src_path.name}")
+        elif sample_choice in SAMPLES and sample_choice != "(none)":
             src_path = Path(SAMPLES[sample_choice])
-        elif any(UPLOAD_DIR.glob("*")):
-            src_path = sorted(UPLOAD_DIR.glob("*"))[-1]
+            st.info(f"Using sample image: {sample_choice}")
+            
         if not src_path:
             st.info("Upload an image or pick a sample in the sidebar.")
         else:
             st.write(f"Source: **{src_path}**")
             pil = Image.open(src_path).convert("RGB")
+            st.image(pil, caption=f"Input Image ({pil.size[0]}x{pil.size[1]})", width=300)
             logs: List[dict] = []
-            ir = detect(pil, logs)
+            
+            # Use enhanced detection
+            enhanced_detector = EnhancedDetector()
+            ir = enhanced_detector.detect_enhanced(pil, logs)
+            
+            # Debug information
+            st.write(f"**Debug Info:**")
+            st.write(f"- Image size: {pil.size}")
+            st.write(f"- Elements detected: {len(ir.get('elements', []))}")
+            st.write(f"- Detection logs: {len(logs)} steps")
+            
+            # Show logs for debugging
+            with st.expander("Detection Logs", expanded=False):
+                for log in logs:
+                    st.json(log)
+            
             schema = _read_schema()
             if schema:
                 try:
@@ -114,6 +137,15 @@ def run():
                     st.success("IR validated ✔")
                 except Exception as e:
                     st.error(f"IR schema validation failed: {e}")
+                    
+            # Show elements info
+            if ir.get('elements'):
+                st.success(f"✅ Found {len(ir['elements'])} elements")
+                for i, el in enumerate(ir['elements'][:5]):  # Show first 5 elements
+                    st.write(f"Element {i+1}: {el.get('type', 'unknown')} - {el.get('text', 'no text')}")
+            else:
+                st.error("❌ No elements detected! Check logs above.")
+                
             boxes = [ (el["bbox"], el["type"], 1.0) for el in ir["elements"] ]
             ov = draw_boxes(pil.copy(), boxes)
             col1, col2 = st.columns([1,1])

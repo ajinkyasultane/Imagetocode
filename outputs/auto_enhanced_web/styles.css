@@ -1,18 +1,12 @@
 :root {
-  --primary: {{ theme.primary_color }};
-  --radius: {{ theme.radius_px }}px;
-  --font: {{ theme.font_stack }};
-  {% if meta.colors %}
-  --color-1: {{ meta.colors[0] if meta.colors|length > 0 else '#2563EB' }};
-  --color-2: {{ meta.colors[1] if meta.colors|length > 1 else '#f3f4f6' }};
-  --color-3: {{ meta.colors[2] if meta.colors|length > 2 else '#e5e7eb' }};
-  --theme: {{ meta.theme if meta.theme else 'light' }};
-  {% endif %}
-  {% if meta.layout and meta.layout.background %}
-  --bg-color: {{ meta.layout.background.hex if meta.layout.background.hex else '#ffffff' }};
-  {% else %}
+  --primary: #2563EB;
+  --radius: 12px;
+  --font: system-ui, Arial;
+  --color-1: #ffffff;
+  --color-2: #1e1e1e;
+  --color-3: #fefefe;
+  --theme: light;
   --bg-color: #ffffff;
-  {% endif %}
 }
 
 * { 
@@ -36,10 +30,6 @@ body {
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-radius: 8px;
-  {% if meta.theme == 'dark' %}
-  background: #1f2937;
-  border-color: #374151;
-  {% endif %}
 }
 
 .element {

@@ -13,14 +13,16 @@ from core.layout import snap_to_grid, associate_label_to_input
 # Heuristics config
 CFG = {
     "resize_max_side_px": 2048,
-    "preprocess": {"grayscale": True, "denoise": "bilateral", "threshold": "adaptive", "deskew": True},
+    "preprocess": {"grayscale": True, "denoise": "bilateral", "threshold": "adaptive", "deskew": False},
     "classify_rules": {
-        "input":  {"aspect_min": 2.0, "aspect_max": 10.0},
-        "button": {"aspect_min": 1.5, "aspect_max": 5.0},
+        "input":  {"aspect_min": 2.0, "aspect_max": 12.0},
+        "button": {"aspect_min": 1.2, "aspect_max": 8.0},
+        "text": {"aspect_min": 1.5, "aspect_max": 15.0},
+        "container": {"min_area": 5000},
     },
     "label_to_input": {"min_horizontal_overlap_ratio": 0.4, "max_vertical_gap_ratio_of_input_h": 0.5},
     "grid": {"grid": "12-col", "container_max_width_px": 480, "margin_px": 24},
-    "ocr": {"min_conf": 0.55},
+    "ocr": {"min_conf": 0.40},  # Lower confidence threshold for better text detection
 }
 
 def _to_cv(pil_img: Image.Image) -> np.ndarray:
@@ -50,16 +52,86 @@ def preprocess(pil_img: Image.Image) -> Tuple[np.ndarray, np.ndarray]:
     thr = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
     return img, thr
 
-def _find_rects(thr: np.ndarray) -> List[Tuple[int,int,int,int]]:
-    # Find contours that look like UI boxes
-    cnts, _ = cv2.findContours(255 - thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+def _find_rects(thr: np.ndarray, img_bgr: np.ndarray) -> List[Tuple[int,int,int,int]]:
+    # Enhanced contour detection for better UI element recognition
     rects = []
+    
+    # Method 1: Traditional contour detection
+    cnts, _ = cv2.findContours(255 - thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in cnts:
         x, y, w, h = cv2.boundingRect(c)
-        if w*h < 600:  # filter tiny
+        if w*h < 400:  # Lower threshold for smaller elements
             continue
         rects.append((x,y,x+w,y+h))
-    return rects
+    
+    # Method 2: Edge-based detection for modern UI elements
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+    
+    # Dilate edges to connect nearby elements
+    kernel = np.ones((3,3), np.uint8)
+    edges = cv2.dilate(edges, kernel, iterations=1)
+    
+    # Find contours from edges
+    edge_cnts, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for c in edge_cnts:
+        x, y, w, h = cv2.boundingRect(c)
+        if w*h < 500 or w < 20 or h < 15:  # Filter very small elements
+            continue
+        rects.append((x,y,x+w,y+h))
+    
+    # Method 3: Color-based segmentation for distinct UI elements
+    try:
+        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+        
+        # Detect colored regions (buttons, highlights, etc.)
+        # Green elements (like buttons in your design)
+        green_lower = np.array([40, 30, 30])
+        green_upper = np.array([80, 255, 255])
+        green_mask = cv2.inRange(hsv, green_lower, green_upper)
+        
+        # Blue elements
+        blue_lower = np.array([100, 30, 30])
+        blue_upper = np.array([130, 255, 255])
+        blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+        
+        # Combine color masks
+        color_mask = cv2.bitwise_or(green_mask, blue_mask)
+        color_cnts, _ = cv2.findContours(color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for c in color_cnts:
+            x, y, w, h = cv2.boundingRect(c)
+            if w*h < 200:  # Even smaller threshold for colored elements
+                continue
+            rects.append((x,y,x+w,y+h))
+    except Exception:
+        pass  # Color detection is optional
+    
+    # Remove duplicates and overlapping rectangles
+    if not rects:
+        return []
+        
+    rects = list(set(rects))
+    filtered_rects = []
+    for rect in rects:
+        x1, y1, x2, y2 = rect
+        # Ensure valid rectangle
+        if x2 <= x1 or y2 <= y1:
+            continue
+            
+        is_duplicate = False
+        for existing in filtered_rects:
+            ex1, ey1, ex2, ey2 = existing
+            # Check for significant overlap
+            overlap_area = max(0, min(x2, ex2) - max(x1, ex1)) * max(0, min(y2, ey2) - max(y1, ey1))
+            rect_area = (x2-x1) * (y2-y1)
+            if rect_area > 0 and overlap_area > 0.7 * rect_area:  # 70% overlap threshold
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            filtered_rects.append(rect)
+    
+    return filtered_rects
 
 def detect(pil_img: Image.Image, logs: List[Dict]) -> Dict:
     W, H = pil_img.size
@@ -76,7 +148,7 @@ def detect(pil_img: Image.Image, logs: List[Dict]) -> Dict:
     img_bgr, thr = preprocess(pil_img)
     logs.append({"stage": "preprocess", "thr_shape": thr.shape})
 
-    rects = _find_rects(thr)
+    rects = _find_rects(thr, img_bgr)
     logs.append({"stage": "contours", "count": len(rects)})
 
     # OCR (optional)
@@ -84,17 +156,43 @@ def detect(pil_img: Image.Image, logs: List[Dict]) -> Dict:
     logs.append({"stage": "ocr", "available": bool(ocr_available()), "lines": len(ocr_lines)})
 
     elements: List[Dict] = []
-    # Classify rects into input/button by aspect ratio; others may be images
+    # Enhanced classification with better heuristics
     for i, (x1,y1,x2,y2) in enumerate(rects):
         ar = aspect_ratio((x1,y1,x2,y2))
         w = x2-x1; h = y2-y1
+        area = w * h
+        
+        # Extract region for color analysis
+        region = None
+        try:
+            if (y1 < y2 and x1 < x2 and 
+                y1 >= 0 and x1 >= 0 and 
+                y2 <= img_bgr.shape[0] and x2 <= img_bgr.shape[1]):
+                region = img_bgr[y1:y2, x1:x2]
+        except Exception:
+            region = None
+        
         typ = None
-        if CFG["classify_rules"]["input"]["aspect_min"] <= ar <= CFG["classify_rules"]["input"]["aspect_max"] and h<=80:
+        # Input field detection (rectangular, moderate aspect ratio)
+        if (CFG["classify_rules"]["input"]["aspect_min"] <= ar <= CFG["classify_rules"]["input"]["aspect_max"] and 
+            20 <= h <= 80 and w >= 100):
             typ = "input"
-        elif CFG["classify_rules"]["button"]["aspect_min"] <= ar <= CFG["classify_rules"]["button"]["aspect_max"] and 40<=h<=100:
+        # Button detection (moderate aspect ratio, specific size range)
+        elif (CFG["classify_rules"]["button"]["aspect_min"] <= ar <= CFG["classify_rules"]["button"]["aspect_max"] and 
+              25 <= h <= 100 and w >= 60):
             typ = "button"
-        else:
+        # Logo/icon detection (square-ish, medium size)
+        elif 0.5 <= ar <= 2.0 and 50 <= min(w,h) <= 200 and area >= 2500:
             typ = "image"
+        # Container detection (large areas)
+        elif area >= 10000:
+            typ = "container"
+        # Text block detection (wide, short)
+        elif ar >= 3.0 and h <= 50:
+            typ = "text"
+        else:
+            typ = "container"  # Default to container for unknown elements
+            
         elements.append({"id": f"el_{i}", "type": typ, "bbox": [float(x1),float(y1),float(x2),float(y2)]})
 
     # Use OCR lines as text elements
